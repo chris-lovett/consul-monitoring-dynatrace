@@ -1,0 +1,320 @@
+# Dynatrace Extensions 2.0 — Consul Enterprise Monitoring
+# ---------------------------------------------------------
+# This extension defines:
+#   - Topology mapping: Consul servers and dataplane instances as
+#     Dynatrace custom entities
+#   - Prometheus scrape targets for Consul agent metrics
+#   - Metric ingestion and metadata (unit, display name)
+#
+# Deploy via the Dynatrace Hub or the Extensions API:
+#   curl -X POST "<tenant>/api/v2/extensions" \
+#     -H "Authorization: Api-Token <token>" \
+#     -H "Content-Type: application/octet-stream" \
+#     --data-binary @consul-monitoring.zip
+#
+# See: docs/03-dynatrace-metrics-integration.md
+
+name: custom:consul-enterprise-monitoring
+version: "1.0.0"
+minDynatraceVersion: "1.271"
+author:
+  name: HashiCorp Consul Monitoring
+
+# ------------------------------------------------------------------
+# Topology: Custom entity types for Consul components
+# ------------------------------------------------------------------
+topology:
+  types:
+    - name: consul:server
+      displayName: Consul Server
+      rules:
+        - idPattern: "consul-server-{dt.entity.host}-{consul.datacenter}"
+          instanceNamePattern: "{dt.entity.host} ({consul.datacenter})"
+          sources:
+            - sourceType: Metrics
+              condition: "$prefix(consul.raft)"
+          attributes:
+            - pattern: "{consul.datacenter}"
+              key: consul.datacenter
+              displayName: Consul Datacenter
+            - pattern: "{consul.role}"
+              key: consul.role
+              displayName: Agent Role
+
+    - name: consul:dataplane
+      displayName: Consul Dataplane
+      rules:
+        - idPattern: "consul-dataplane-{k8s.pod.name}"
+          instanceNamePattern: "{k8s.pod.name}"
+          sources:
+            - sourceType: Metrics
+              condition: "$prefix(consul_dataplane)"
+          attributes:
+            - pattern: "{k8s.namespace}"
+              key: k8s.namespace
+              displayName: Kubernetes Namespace
+
+# ------------------------------------------------------------------
+# Metrics: Prometheus scrape configuration
+# ------------------------------------------------------------------
+metrics:
+  # Consul Agent metrics (server + client)
+  # Scraped from: http://<consul-pod>:8500/v1/agent/metrics?format=prometheus
+  - key: consul.raft.commitTime
+    metadata:
+      displayName: Raft Commit Time
+      description: "Time to commit a new entry to the Raft log on the leader"
+      unit: MilliSecond
+      sourceEntityType: consul:server
+
+  - key: consul.raft.leader.lastContact
+    metadata:
+      displayName: Raft Leader Last Contact
+      description: "Time since the leader last contacted follower nodes"
+      unit: MilliSecond
+      sourceEntityType: consul:server
+
+  - key: consul.raft.state.candidate
+    metadata:
+      displayName: Raft Candidate Elections
+      description: "Increments whenever a Consul server starts an election"
+      unit: Count
+      sourceEntityType: consul:server
+
+  - key: consul.raft.state.leader
+    metadata:
+      displayName: Raft Leader Promotions
+      description: "Increments whenever a Consul server becomes leader"
+      unit: Count
+      sourceEntityType: consul:server
+
+  - key: consul.server.isLeader
+    metadata:
+      displayName: Is Leader
+      description: "1 if this server is the current Raft leader, 0 otherwise"
+      unit: Bit
+      sourceEntityType: consul:server
+
+  - key: consul.autopilot.healthy
+    metadata:
+      displayName: Autopilot Cluster Health
+      description: "1 if all servers are healthy, 0 if one or more are unhealthy"
+      unit: Bit
+      sourceEntityType: consul:server
+
+  - key: consul.autopilot.failure_tolerance
+    metadata:
+      displayName: Autopilot Failure Tolerance
+      description: "Number of servers the cluster can lose and remain functional"
+      unit: Count
+      sourceEntityType: consul:server
+
+  - key: consul.runtime.alloc_bytes
+    metadata:
+      displayName: Runtime Allocated Bytes
+      description: "Bytes currently allocated by the Consul process"
+      unit: Byte
+      sourceEntityType: consul:server
+
+  - key: consul.runtime.sys_bytes
+    metadata:
+      displayName: Runtime System Bytes
+      description: "Total bytes of memory obtained from the OS by the Consul process"
+      unit: Byte
+      sourceEntityType: consul:server
+
+  - key: consul.runtime.total_gc_pause_ns
+    metadata:
+      displayName: GC Pause (cumulative nanoseconds)
+      description: "Cumulative nanoseconds spent in garbage collection pauses"
+      unit: NanoSecond
+      sourceEntityType: consul:server
+
+  - key: consul.raft.thread.main.saturation
+    metadata:
+      displayName: Raft Main Thread Saturation
+      description: "Proportion of time the main Raft goroutine is busy (0-1)"
+      unit: Percent
+      sourceEntityType: consul:server
+
+  - key: consul.raft.thread.fsm.saturation
+    metadata:
+      displayName: Raft FSM Thread Saturation
+      description: "Proportion of time the FSM goroutine is busy (0-1)"
+      unit: Percent
+      sourceEntityType: consul:server
+
+  - key: consul.mesh.active_root_ca.expiry
+    metadata:
+      displayName: Root CA Expiry
+      description: "Seconds until the service mesh root CA certificate expires"
+      unit: Second
+      sourceEntityType: consul:server
+
+  - key: consul.mesh.active_signing_ca.expiry
+    metadata:
+      displayName: Signing CA Expiry
+      description: "Seconds until the service mesh signing CA certificate expires"
+      unit: Second
+      sourceEntityType: consul:server
+
+  - key: consul.agent.tls.cert.expiry
+    metadata:
+      displayName: Agent TLS Certificate Expiry
+      description: "Seconds until the agent TLS certificate expires"
+      unit: Second
+      sourceEntityType: consul:server
+
+  - key: consul.system.licenseExpiration
+    metadata:
+      displayName: License Expiry
+      description: "Hours until the Consul Enterprise license expires (Enterprise only)"
+      unit: Hour
+      sourceEntityType: consul:server
+
+  - key: consul.kvs.apply
+    metadata:
+      displayName: KV Apply Time
+      description: "Time to complete a KV store update"
+      unit: MilliSecond
+      sourceEntityType: consul:server
+
+  - key: consul.raft.apply
+    metadata:
+      displayName: Raft Apply Count
+      description: "Number of Raft transactions applied during the interval"
+      unit: Count
+      sourceEntityType: consul:server
+
+  - key: consul.client.rpc
+    metadata:
+      displayName: Client RPC Requests
+      description: "RPC requests from a Consul agent to a server"
+      unit: Count
+      sourceEntityType: consul:server
+
+  - key: consul.client.rpc.exceeded
+    metadata:
+      displayName: Client RPC Rate-Limited
+      description: "RPC requests that were rate-limited"
+      unit: Count
+      sourceEntityType: consul:server
+
+  - key: consul.client.rpc.failed
+    metadata:
+      displayName: Client RPC Failed
+      description: "RPC requests that failed"
+      unit: Count
+      sourceEntityType: consul:server
+
+  - key: consul.raft.fsm.lastRestoreDuration
+    metadata:
+      displayName: FSM Last Restore Duration
+      description: "Time to restore the last Raft FSM snapshot"
+      unit: MilliSecond
+      sourceEntityType: consul:server
+
+  - key: consul.raft.leader.oldestLogAge
+    metadata:
+      displayName: Raft Oldest Log Age
+      description: "Age of the oldest log entry in the leader's log store"
+      unit: MilliSecond
+      sourceEntityType: consul:server
+
+  # Consul Dataplane metrics
+  # Scraped from: http://<pod-ip>:20200/metrics
+  - key: consul_dataplane.connected
+    metadata:
+      displayName: Dataplane Server Connected
+      description: "1 if consul-dataplane is connected to a Consul server"
+      unit: Bit
+      sourceEntityType: consul:dataplane
+
+  - key: consul_dataplane.envoy_connected
+    metadata:
+      displayName: Dataplane Envoy Connected
+      description: "1 if Envoy is connected to consul-dataplane and receiving xDS"
+      unit: Bit
+      sourceEntityType: consul:dataplane
+
+  - key: consul_dataplane.connection_errors
+    metadata:
+      displayName: Dataplane Connection Errors
+      description: "Number of gRPC stream errors on the dataplane"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: consul_dataplane.connect_duration
+    metadata:
+      displayName: Dataplane Connect Duration
+      description: "Time consul-dataplane spends connecting to a Consul server"
+      unit: MilliSecond
+      sourceEntityType: consul:dataplane
+
+# ------------------------------------------------------------------
+# Prometheus endpoints (activated per monitoring configuration)
+# ------------------------------------------------------------------
+prometheus:
+  - group: consul_agent
+    subgroups:
+      - featureSet: default
+        metrics:
+          - key: consul.raft.commitTime
+            value: consul_raft_commitTime
+          - key: consul.raft.leader.lastContact
+            value: consul_raft_leader_lastContact
+          - key: consul.raft.state.candidate
+            value: consul_raft_state_candidate
+          - key: consul.raft.state.leader
+            value: consul_raft_state_leader
+          - key: consul.server.isLeader
+            value: consul_server_isLeader
+          - key: consul.autopilot.healthy
+            value: consul_autopilot_healthy
+          - key: consul.autopilot.failure_tolerance
+            value: consul_autopilot_failure_tolerance
+          - key: consul.runtime.alloc_bytes
+            value: consul_runtime_alloc_bytes
+          - key: consul.runtime.sys_bytes
+            value: consul_runtime_sys_bytes
+          - key: consul.runtime.total_gc_pause_ns
+            value: consul_runtime_total_gc_pause_ns
+          - key: consul.raft.thread.main.saturation
+            value: consul_raft_thread_main_saturation
+          - key: consul.raft.thread.fsm.saturation
+            value: consul_raft_thread_fsm_saturation
+          - key: consul.mesh.active_root_ca.expiry
+            value: consul_mesh_active_root_ca_expiry
+          - key: consul.mesh.active_signing_ca.expiry
+            value: consul_mesh_active_signing_ca_expiry
+          - key: consul.agent.tls.cert.expiry
+            value: consul_agent_tls_cert_expiry
+          - key: consul.system.licenseExpiration
+            value: consul_system_licenseExpiration
+          - key: consul.kvs.apply
+            value: consul_kvs_apply
+          - key: consul.raft.apply
+            value: consul_raft_apply
+          - key: consul.client.rpc
+            value: consul_client_rpc
+          - key: consul.client.rpc.exceeded
+            value: consul_client_rpc_exceeded
+          - key: consul.client.rpc.failed
+            value: consul_client_rpc_failed
+          - key: consul.raft.fsm.lastRestoreDuration
+            value: consul_raft_fsm_lastRestoreDuration
+          - key: consul.raft.leader.oldestLogAge
+            value: consul_raft_leader_oldestLogAge
+
+  - group: consul_dataplane
+    subgroups:
+      - featureSet: default
+        metrics:
+          - key: consul_dataplane.connected
+            value: consul_dataplane_connected
+          - key: consul_dataplane.envoy_connected
+            value: consul_dataplane_envoy_connected
+          - key: consul_dataplane.connection_errors
+            value: consul_dataplane_connection_errors
+          - key: consul_dataplane.connect_duration
+            value: consul_dataplane_connect_duration
