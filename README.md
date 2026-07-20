@@ -1,10 +1,10 @@
 # Consul Enterprise Monitoring with Dynatrace
 
-This repository provides comprehensive guidance for monitoring **Consul Enterprise** on **Red Hat OpenShift** using **Dynatrace** as the observability backend.
+Consul's role as the service mesh control plane makes it foundational to everything running on top of it — service discovery, health-based routing, mTLS certificate issuance, and access control all flow through the Consul server cluster. Gaps in Consul observability translate directly into gaps in your ability to detect and respond to degraded mesh behavior before it surfaces as a user-facing incident.
 
-## Who This Is For
+This repository covers the full instrumentation path for Consul Enterprise on Red Hat OpenShift with Dynatrace as the observability backend: from enabling agent-level telemetry and structuring log output, through ingesting metrics and logs into Dynatrace, to defining the alert thresholds that matter operationally. It bridges three sets of documentation that operators typically have to reconcile independently — Consul's telemetry reference, the Dynatrace Extensions 2.0 model, and OpenShift's networking and security constraints — and consolidates them into a single, deployable baseline.
 
-Platform and SRE teams that operate Consul Enterprise on OpenShift and use Dynatrace for centralized monitoring, logging, and alerting.
+The scope is Consul control plane and dataplane health. This covers Raft consensus stability, write performance, TLS certificate and Enterprise license expiration, `consul-dataplane` sidecar connectivity, host resource pressure, and the log events most likely to indicate a cluster problem before metrics catch up. Application-level observability — Envoy L7 traffic metrics, distributed tracing, per-service error rates — is out of scope for this iteration and planned separately.
 
 ## What This Covers
 
@@ -32,10 +32,6 @@ Platform and SRE teams that operate Consul Enterprise on OpenShift and use Dynat
 3. **Configure the Dynatrace Extension** — deploy [`configs/dynatrace-extension/extension.yaml`](configs/dynatrace-extension/extension.yaml) via the Dynatrace Hub or API (see [docs/03-dynatrace-metrics-integration.md](docs/03-dynatrace-metrics-integration.md)).
 4. **Import alert definitions** — use [`configs/dynatrace-extension/alerts.json`](configs/dynatrace-extension/alerts.json) to bootstrap anomaly detection (see [docs/05-key-metrics-and-alerts.md](docs/05-key-metrics-and-alerts.md)).
 5. **Validate log ingestion** — confirm Consul log streams appear in Dynatrace Log Management (see [docs/04-dynatrace-log-monitoring.md](docs/04-dynatrace-log-monitoring.md)).
-
-## Out of Scope (Future Iteration)
-
-Application-level service mesh observability (Envoy sidecar metrics, L7 traffic metrics, distributed tracing) is planned for a future iteration of this repository.
 
 ## Reference Documentation
 
