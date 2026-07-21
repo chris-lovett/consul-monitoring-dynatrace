@@ -115,16 +115,13 @@ Two ingestion paths are supported and can be used independently or together:
 
 ## Monitoring Scope for This Repository
 
-This repository covers **infrastructure + control plane monitoring**:
-
-- ✅ Consul server agent health and Raft consensus
-- ✅ Consul client agent / dataplane connectivity
-- ✅ Certificate and license expiry
-- ✅ Host resource monitoring
-- ✅ Consul structured log collection and alerting
-
-**Out of scope (future iteration):**
-
-- ❌ Envoy / service mesh L7 traffic metrics (request rate, error rate, latency per service)
-- ❌ Distributed tracing across services
-- ❌ Application-level Dynatrace APM instrumentation
+| Signal | Source | Document |
+|---|---|---|
+| Consul server agent health and Raft consensus | Consul agent telemetry (DogStatsD / Prometheus) | [05-key-metrics-and-alerts.md](./05-key-metrics-and-alerts.md) |
+| Consul client agent / dataplane connectivity | `consul_dataplane.*` metrics | [05-key-metrics-and-alerts.md](./05-key-metrics-and-alerts.md) |
+| TLS certificate and Enterprise license expiry | `consul.mesh.*`, `consul.system.*` metrics | [05-key-metrics-and-alerts.md](./05-key-metrics-and-alerts.md) |
+| Host resource pressure | Dynatrace OneAgent host metrics | [docs/06-openshift-considerations.md](./06-openshift-considerations.md) |
+| Consul structured log collection and alerting | Container stdout via Dynatrace log ingest | [04-dynatrace-log-monitoring.md](./04-dynatrace-log-monitoring.md) |
+| Envoy L7 traffic metrics (request rate, error rate, latency) | Envoy sidecar Prometheus endpoint (port 20200) | [07-application-observability.md](./07-application-observability.md) |
+| Envoy proxy access logs | `proxy-defaults` AccessLogs → stdout | [07-application-observability.md](./07-application-observability.md) |
+| Distributed tracing across service boundaries | OTLP → Dynatrace via OpenTelemetry Collector | [07-application-observability.md](./07-application-observability.md) |

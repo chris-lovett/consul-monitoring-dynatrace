@@ -176,16 +176,26 @@ timeseries consul_leader_last_contact = avg(ext.consul.raft.leader.lastContact),
 
 ---
 
-## Consul API Gateway and Dataplane Metrics
+## Consul Dataplane and Envoy Sidecar Metrics
 
-For `consul-dataplane` sidecars, the Prometheus endpoint is at the pod IP on port 20200 (when `envoy_prometheus_bind_addr` is configured in proxy-defaults). Configure a separate scrape target for this:
+For `consul-dataplane` sidecars, the merged Prometheus endpoint is at the pod IP on port 20200 (when `envoy_prometheus_bind_addr` is configured in `proxy-defaults`). Configure a separate scrape target for this:
 
 ```
 http://<pod-ip>:20200/metrics
 ```
 
-This endpoint returns merged metrics from:
-- `consul-dataplane.*` — dataplane connectivity and server connection health
-- `envoy_*` — Envoy proxy statistics (L7 traffic metrics — future iteration scope)
+This endpoint returns merged metrics from three sources:
+- `consul_dataplane.*` — dataplane connectivity and server connection health
+- `envoy_cluster_*` — per-upstream-service L7 request metrics (rate, error rate, latency, circuit breaker state)
+- `envoy_http_*` — per-listener inbound request metrics
 
-For this iteration, key `consul_dataplane.*` metrics are sufficient to confirm sidecar health. See [docs/05-key-metrics-and-alerts.md](./05-key-metrics-and-alerts.md) for alert thresholds.
+**Annotate application pods** to enable Dynatrace scraping of the port 20200 endpoint:
+
+```yaml
+annotations:
+  metrics.dynatrace.com/scrape: "true"
+  metrics.dynatrace.com/port: "20200"
+  metrics.dynatrace.com/path: "/metrics"
+```
+
+See [docs/05-key-metrics-and-alerts.md](./05-key-metrics-and-alerts.md) for `consul_dataplane.*` alert thresholds and [docs/07-application-observability.md](./07-application-observability.md) for the full L7 metrics and distributed tracing setup.

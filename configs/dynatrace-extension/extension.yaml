@@ -251,6 +251,122 @@ metrics:
       unit: MilliSecond
       sourceEntityType: consul:dataplane
 
+  # Envoy upstream (outbound) L7 metrics — per upstream service cluster
+  # Metric names use a wildcard label dimension for the cluster name.
+  # These metrics are only emitted when the service protocol is http/http2/grpc.
+  - key: envoy.cluster.upstream_rq_total
+    metadata:
+      displayName: Upstream Requests Total
+      description: "Total requests sent to an upstream service cluster"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.cluster.upstream_rq_2xx
+    metadata:
+      displayName: Upstream Requests 2xx
+      description: "Requests that received a 2xx response from the upstream"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.cluster.upstream_rq_4xx
+    metadata:
+      displayName: Upstream Requests 4xx
+      description: "Requests that received a 4xx (client error) response from the upstream"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.cluster.upstream_rq_5xx
+    metadata:
+      displayName: Upstream Requests 5xx
+      description: "Requests that received a 5xx (server error) response from the upstream"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.cluster.upstream_rq_time
+    metadata:
+      displayName: Upstream Request Latency
+      description: "Request duration to the upstream service (histogram, milliseconds)"
+      unit: MilliSecond
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.cluster.upstream_rq_timeout
+    metadata:
+      displayName: Upstream Request Timeouts
+      description: "Requests that timed out waiting for an upstream response"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.cluster.upstream_rq_retry
+    metadata:
+      displayName: Upstream Request Retries
+      description: "Total request retries to an upstream service"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.cluster.upstream_rq_retry_limit_exceeded
+    metadata:
+      displayName: Upstream Retry Limit Exceeded
+      description: "Requests dropped because the retry budget was exhausted"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.cluster.upstream_cx_none_healthy
+    metadata:
+      displayName: Upstream No Healthy Endpoints
+      description: "Requests dropped because no healthy upstream endpoints exist"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.cluster.upstream_cx_overflow
+    metadata:
+      displayName: Upstream Connection Circuit Breaker Overflow
+      description: "Requests rejected because the connection circuit breaker was tripped"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.cluster.upstream_rq_pending_overflow
+    metadata:
+      displayName: Upstream Pending Request Overflow
+      description: "Requests rejected because the pending request queue was full"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.cluster.upstream_cx_connect_fail
+    metadata:
+      displayName: Upstream Connection Failures
+      description: "TCP connection failures to the upstream service"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  # Envoy downstream (inbound) L7 metrics — per listener
+  - key: envoy.http.downstream_rq_total
+    metadata:
+      displayName: Inbound Requests Total
+      description: "Total inbound requests received by the Envoy listener"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.http.downstream_rq_5xx
+    metadata:
+      displayName: Inbound Requests 5xx
+      description: "Inbound requests that resulted in a 5xx response"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.http.downstream_rq_time
+    metadata:
+      displayName: Inbound Request Latency
+      description: "Inbound request latency including Envoy processing time (histogram, milliseconds)"
+      unit: MilliSecond
+      sourceEntityType: consul:dataplane
+
+  - key: envoy.http.downstream_cx_active
+    metadata:
+      displayName: Active Inbound Connections
+      description: "Currently active inbound connections to the Envoy listener"
+      unit: Count
+      sourceEntityType: consul:dataplane
+
 # ------------------------------------------------------------------
 # Prometheus endpoints (activated per monitoring configuration)
 # ------------------------------------------------------------------
@@ -318,3 +434,43 @@ prometheus:
             value: consul_dataplane_connection_errors
           - key: consul_dataplane.connect_duration
             value: consul_dataplane_connect_duration
+
+  # Envoy sidecar metrics scraped from the merged port 20200 endpoint.
+  # Cluster names are dynamic (encode service/namespace/datacenter) so
+  # these are collected as generic envoy_cluster_* and envoy_http_* families.
+  - group: envoy_sidecar
+    subgroups:
+      - featureSet: default
+        metrics:
+          - key: envoy.cluster.upstream_rq_total
+            value: envoy_cluster_upstream_rq_total
+          - key: envoy.cluster.upstream_rq_2xx
+            value: envoy_cluster_upstream_rq_2xx
+          - key: envoy.cluster.upstream_rq_4xx
+            value: envoy_cluster_upstream_rq_4xx
+          - key: envoy.cluster.upstream_rq_5xx
+            value: envoy_cluster_upstream_rq_5xx
+          - key: envoy.cluster.upstream_rq_time
+            value: envoy_cluster_upstream_rq_time
+          - key: envoy.cluster.upstream_rq_timeout
+            value: envoy_cluster_upstream_rq_timeout
+          - key: envoy.cluster.upstream_rq_retry
+            value: envoy_cluster_upstream_rq_retry
+          - key: envoy.cluster.upstream_rq_retry_limit_exceeded
+            value: envoy_cluster_upstream_rq_retry_limit_exceeded
+          - key: envoy.cluster.upstream_cx_none_healthy
+            value: envoy_cluster_upstream_cx_none_healthy
+          - key: envoy.cluster.upstream_cx_overflow
+            value: envoy_cluster_upstream_cx_overflow
+          - key: envoy.cluster.upstream_rq_pending_overflow
+            value: envoy_cluster_upstream_rq_pending_overflow
+          - key: envoy.cluster.upstream_cx_connect_fail
+            value: envoy_cluster_upstream_cx_connect_fail
+          - key: envoy.http.downstream_rq_total
+            value: envoy_http_downstream_rq_total
+          - key: envoy.http.downstream_rq_5xx
+            value: envoy_http_downstream_rq_5xx
+          - key: envoy.http.downstream_rq_time
+            value: envoy_http_downstream_rq_time
+          - key: envoy.http.downstream_cx_active
+            value: envoy_http_downstream_cx_active
